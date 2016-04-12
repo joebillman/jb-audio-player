@@ -1,11 +1,13 @@
 /// <reference path="../libraries/createjs/createjs.d.ts"/>
 /// <reference path="ICreateable.ts"/>
 
+import Shape = createjs.Shape;
+import Container = createjs.Container;
 /**
  * Created by Joe on 4/11/2016.
  */
 
-class JBAudioPlayer implements ICreateable
+class JBAudioPlayer extends Container implements ICreateable
 {
     //--------------------------------------------------------------------------
     //
@@ -17,6 +19,7 @@ class JBAudioPlayer implements ICreateable
     //  Private:
     //----------------------------------
 
+    private bg:Shape;
     private played:boolean;
 
     //--------------------------------------------------------------------------
@@ -27,7 +30,7 @@ class JBAudioPlayer implements ICreateable
 
     constructor()
     {
-
+        super();
     }
 
     //--------------------------------------------------------------------------
@@ -42,7 +45,16 @@ class JBAudioPlayer implements ICreateable
 
     private _init()
     {
+        this.played = false;
+    }
 
+    private createBg()
+    {
+        this.bg = new Shape();
+        this.bg.graphics.beginFill("#FF0000");
+        this.bg.graphics.drawRoundRect(0, 0, 400, 100, 6);
+        this.bg.graphics.endFill();
+        this.addChild(this.bg);
     }
 
     //----------------------------------
@@ -51,7 +63,7 @@ class JBAudioPlayer implements ICreateable
 
     create()
     {
-        alert("create");
+        this.createBg();
     }
 
     play()
