@@ -18,6 +18,8 @@
             stage = new createjs.Stage("playerCanvas");
 
             audioPlayer = new JBAudioPlayer();
+            audioPlayer.x = 4;
+            audioPlayer.y = 4;
             stage.addChild(audioPlayer)
             audioPlayer.create();
 
@@ -28,7 +30,6 @@
 
 </head>
 <body  onload="_onLoad();">
-    <h1>JBAudioPlayer</h1>
     <canvas id="playerCanvas" width="1024" height="768"></canvas>
 </body>
 </html>
