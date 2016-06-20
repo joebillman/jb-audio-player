@@ -9,6 +9,7 @@ var Bitmap = createjs.Bitmap;
 var Container = createjs.Container;
 var CreateJSText = createjs.Text;
 var Shape = createjs.Shape;
+var Sound = createjs.Sound;
 /**
  * Created by Joe on 4/11/2016.
  */
@@ -22,13 +23,30 @@ var JBAudioPlayer = (function (_super) {
     function JBAudioPlayer() {
         var _this = this;
         _super.call(this);
-        this.updateStage = function () {
-            console.log(_this.playBtn.getBounds().width);
-            _this.playBtn.regX = _this.playBtn.getBounds().width / 2;
-            _this.playBtn.regY = _this.playBtn.getBounds().height / 2;
-            _this.playBtn.x = _this.width / 2;
-            _this.playBtn.y = 128;
-            _this.stage.update();
+        this.handleClick = function () {
+            console.log("click");
+            if (_this.playing) {
+                clearInterval(_this.intervalID);
+                _this.curPosition = _this.curAudio.position;
+                _this.curAudio.stop();
+            }
+            else {
+                _this.curAudio.play();
+                _this.curAudio.position = _this.curPosition;
+                _this.intervalID = setInterval(_this.handleInterval, 250);
+            }
+            _this.playing = !_this.playing;
+        };
+        this.handleAudioComplete = function () {
+            clearInterval(_this.intervalID);
+            //console.log("audioComplete");
+        };
+        this.handleInterval = function () {
+            _this.updatePlayPosition();
+            _this.updateProgressBarWidth(_this.curAudio.position / _this.curAudio.duration);
+        };
+        this.handleLoadAudio = function () {
+            _this.play();
         };
         this.bgFillColor = "#FFFFFF";
         this.bgStrokeColor = "#0079FF";
@@ -61,11 +79,37 @@ var JBAudioPlayer = (function (_super) {
         this.addChild(this.bg);
     };
     JBAudioPlayer.prototype.createPlayBtn = function () {
-        this.playBtn = new Bitmap("images/play-btn.png");
+        this.playBtn = new Container();
+        var circle = new Shape();
+        circle.graphics.beginStroke("#0079FF");
+        circle.graphics.setStrokeStyle(2);
+        circle.graphics.beginFill("#FFFFFF");
+        circle.graphics.drawCircle(0, 0, 25);
+        circle.graphics.endFill();
+        this.playBtn.addChild(circle);
+        var triangle = new Shape();
+        triangle.graphics.beginFill("#0079FF");
+        triangle.graphics.drawPolyStar(0, 0, 16, 3, 0, 0);
+        triangle.graphics.endFill();
+        this.playBtn.addChild(triangle);
+        this.playBtn.setBounds(0, 0, 50, 50);
+        this.playBtn.x = this.width / 2;
+        this.playBtn.y = 128;
+        this.playBtn.addEventListener("click", this.handleClick);
         this.addChild(this.playBtn);
-        setTimeout(this.updateStage, 1000);
     };
-    JBAudioPlayer.prototype.createProgressBars = function () {
+    JBAudioPlayer.prototype.createProgressBar = function (width) {
+        if (width === void 0) { width = 0; }
+        this.progressBarFill = new Shape();
+        this.progressBarFill.graphics.beginFill(this.progressBarFillColor);
+        this.progressBarFill.graphics.drawRect(0, 0, width, 14);
+        this.progressBarFill.graphics.endFill();
+        this.progressBarFill.setBounds(0, 0, width, 14);
+        this.progressBarFill.x = 60;
+        this.progressBarFill.y = 68;
+        this.addChild(this.progressBarFill);
+    };
+    JBAudioPlayer.prototype.createProgressBarBg = function () {
         this.progressBarBg = new Shape();
         this.progressBarBg.graphics.beginFill(this.progressBarBgColor);
         this.progressBarBg.graphics.drawRect(0, 0, 200, 14);
@@ -74,14 +118,10 @@ var JBAudioPlayer = (function (_super) {
         this.progressBarBg.x = 60;
         this.progressBarBg.y = 68;
         this.addChild(this.progressBarBg);
-        this.progressBarFill = new Shape();
-        this.progressBarFill.graphics.beginFill(this.progressBarFillColor);
-        this.progressBarFill.graphics.drawRect(0, 0, 180, 14);
-        this.progressBarFill.graphics.endFill();
-        this.progressBarFill.setBounds(0, 0, 180, 14);
-        this.progressBarFill.x = 60;
-        this.progressBarFill.y = 68;
-        this.addChild(this.progressBarFill);
+    };
+    JBAudioPlayer.prototype.createProgressBars = function () {
+        this.createProgressBarBg();
+        this.createProgressBar();
     };
     JBAudioPlayer.prototype.createSubTitle = function () {
         this.subTitleField = new CreateJSText();
@@ -119,6 +159,31 @@ var JBAudioPlayer = (function (_super) {
         this.titleField.y = 8;
         this.addChild(this.titleField);
     };
+    JBAudioPlayer.prototype.destroyProgressBar = function () {
+        if (this.progressBarFill) {
+            if (this.contains(this.progressBarFill)) {
+                this.removeChild(this.progressBarFill);
+            }
+            this.progressBarFill = null;
+        }
+    };
+    JBAudioPlayer.prototype.milliToMinAndSec = function (val) {
+        var time_str = "";
+        var min = Math.floor(val / 1000 / 60);
+        var sec = (Math.floor(val / 1000) % 60);
+        time_str += (min < 10) ? 0 + min.toString() : min.toString();
+        time_str += ":";
+        time_str += (sec < 10) ? 0 + sec.toString() : sec.toString();
+        return time_str;
+    };
+    JBAudioPlayer.prototype.updatePlayPosition = function () {
+        this.curTimeField.text = this.milliToMinAndSec(this.curAudio.position);
+        this.stage.update();
+    };
+    JBAudioPlayer.prototype.updateProgressBarWidth = function (percentage) {
+        this.destroyProgressBar();
+        this.createProgressBar(200 * percentage);
+    };
     //----------------------------------
     //  Public:
     //----------------------------------
@@ -130,7 +195,19 @@ var JBAudioPlayer = (function (_super) {
         this.createProgressBars();
         this.createPlayBtn();
     };
-    JBAudioPlayer.prototype.play = function () {
+    JBAudioPlayer.prototype.loadAudioFile = function (file, id) {
+        if (id === void 0) { id = "audio"; }
+        Sound.on("fileload", this.handleLoadAudio, this);
+        Sound.registerSound(file, id);
+    };
+    JBAudioPlayer.prototype.play = function (id) {
+        if (id === void 0) { id = "audio"; }
+        this.playing = true;
+        this.curAudio = createjs.Sound.play(id);
+        this.curAudio.on("complete", this.handleAudioComplete, this);
+        //this.curAudio.volume = 0;
+        this.totalTimeField.text = this.milliToMinAndSec(this.curAudio.duration);
+        this.intervalID = setInterval(this.handleInterval, 250);
     };
     return JBAudioPlayer;
 }(Container));

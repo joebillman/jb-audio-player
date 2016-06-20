@@ -5,6 +5,7 @@ import Bitmap = createjs.Bitmap;
 import Container = createjs.Container;
 import CreateJSText = createjs.Text;
 import Shape = createjs.Shape;
+import Sound = createjs.Sound;
 
 /**
  * Created by Joe on 4/11/2016.
@@ -38,9 +39,13 @@ class JBAudioPlayer extends Container implements ICreateable
     //----------------------------------
 
     private bg:Shape;
+    private curAudio;
+    private curPosition:number;
     private curTimeField:CreateJSText;
-    private playBtn:Bitmap;
+    private intervalID:number;
+    private playBtn:Container;
     private played:boolean;
+    private playing:boolean;
     private progressBarBg:Shape;
     private progressBarFill:Shape;
     private subTitleField:CreateJSText;
@@ -92,24 +97,44 @@ class JBAudioPlayer extends Container implements ICreateable
         this.addChild(this.bg);
     }
 
-    private updateStage = () =>
-    {
-        console.log(this.playBtn.getBounds().width);
-        this.playBtn.regX = this.playBtn.getBounds().width/2;
-        this.playBtn.regY = this.playBtn.getBounds().height/2;
-        this.playBtn.x = this.width/2;
-        this.playBtn.y = 128;
-        this.stage.update();
-    }
-
     private createPlayBtn()
     {
-        this.playBtn = new Bitmap("images/play-btn.png");
+        this.playBtn = new Container();
+
+        var circle = new Shape();
+        circle.graphics.beginStroke("#0079FF");
+        circle.graphics.setStrokeStyle(2);
+        circle.graphics.beginFill("#FFFFFF");
+        circle.graphics.drawCircle(0, 0, 25);
+        circle.graphics.endFill();
+        this.playBtn.addChild(circle);
+
+        var triangle = new Shape();
+        triangle.graphics.beginFill("#0079FF");
+        triangle.graphics.drawPolyStar(0, 0, 16, 3, 0, 0);
+        triangle.graphics.endFill();
+        this.playBtn.addChild(triangle);
+
+        this.playBtn.setBounds(0, 0, 50, 50);
+        this.playBtn.x = this.width/2;
+        this.playBtn.y = 128;
+        this.playBtn.addEventListener("click", this.handleClick);
         this.addChild(this.playBtn);
-        setTimeout(this.updateStage, 1000);
     }
 
-    private createProgressBars()
+    private createProgressBar(width:number = 0)
+    {
+        this.progressBarFill = new Shape();
+        this.progressBarFill.graphics.beginFill(this.progressBarFillColor);
+        this.progressBarFill.graphics.drawRect(0, 0, width, 14);
+        this.progressBarFill.graphics.endFill();
+        this.progressBarFill.setBounds(0, 0, width, 14);
+        this.progressBarFill.x = 60;
+        this.progressBarFill.y = 68;
+        this.addChild(this.progressBarFill);
+    }
+
+    private createProgressBarBg()
     {
         this.progressBarBg = new Shape();
         this.progressBarBg.graphics.beginFill(this.progressBarBgColor);
@@ -119,15 +144,12 @@ class JBAudioPlayer extends Container implements ICreateable
         this.progressBarBg.x = 60;
         this.progressBarBg.y = 68;
         this.addChild(this.progressBarBg);
+    }
 
-        this.progressBarFill = new Shape();
-        this.progressBarFill.graphics.beginFill(this.progressBarFillColor);
-        this.progressBarFill.graphics.drawRect(0, 0, 180, 14);
-        this.progressBarFill.graphics.endFill();
-        this.progressBarFill.setBounds(0, 0, 180, 14);
-        this.progressBarFill.x = 60;
-        this.progressBarFill.y = 68;
-        this.addChild(this.progressBarFill);
+    private createProgressBars()
+    {
+        this.createProgressBarBg();
+        this.createProgressBar();
     }
 
     private createSubTitle()
@@ -173,11 +195,82 @@ class JBAudioPlayer extends Container implements ICreateable
         this.addChild(this.titleField);
     }
 
+    private destroyProgressBar()
+    {
+        if(this.progressBarFill)
+        {
+            if(this.contains(this.progressBarFill))
+            {
+                this.removeChild(this.progressBarFill);
+            }
+            this.progressBarFill = null;
+        }
+    }
+
+    private handleClick = () =>
+    {
+        console.log("click");
+        if(this.playing)
+        {
+            clearInterval(this.intervalID);
+            this.curPosition = this.curAudio.position;
+            this.curAudio.stop();
+        }
+        else
+        {
+            this.curAudio.play();
+            this.curAudio.position = this.curPosition;
+            this.intervalID = setInterval(this.handleInterval, 250);
+        }
+        this.playing = !this.playing;
+    }
+
+    private handleAudioComplete = () =>
+    {
+        clearInterval(this.intervalID);
+        //console.log("audioComplete");
+    }
+
+    private handleInterval = () =>
+    {
+        this.updatePlayPosition();
+        this.updateProgressBarWidth(this.curAudio.position/this.curAudio.duration);
+    }
+
+    private handleLoadAudio = () =>
+    {
+        this.play();
+    }
+
+    private milliToMinAndSec(val:number):string
+    {
+        var time_str:string = "";
+        var min:number = Math.floor(val / 1000 / 60);
+        var sec:number = (Math.floor(val / 1000) % 60);
+        time_str += (min < 10)? 0+min.toString():min.toString();
+        time_str += ":";
+        time_str += (sec < 10)?0+sec.toString():sec.toString();
+
+        return time_str;
+    }
+
+    private updatePlayPosition()
+    {
+        this.curTimeField.text = this.milliToMinAndSec(this.curAudio.position);
+        this.stage.update();
+    }
+
+    private updateProgressBarWidth(percentage:number)
+    {
+        this.destroyProgressBar();
+        this.createProgressBar(200*percentage);
+    }
+
     //----------------------------------
     //  Public:
     //----------------------------------
 
-    create()
+    public create()
     {
         this.createBg();
         this.createTitle();
@@ -187,9 +280,20 @@ class JBAudioPlayer extends Container implements ICreateable
         this.createPlayBtn();
     }
 
-    play()
+    public loadAudioFile(file:string, id:string="audio")
     {
-        
+        Sound.on("fileload", this.handleLoadAudio, this);
+        Sound.registerSound(file, id);
+    }
+
+    public play(id:string="audio")
+    {
+        this.playing = true;
+        this.curAudio = createjs.Sound.play(id);
+        this.curAudio.on("complete", this.handleAudioComplete, this);
+        //this.curAudio.volume = 0;
+        this.totalTimeField.text = this.milliToMinAndSec(this.curAudio.duration);
+        this.intervalID = setInterval(this.handleInterval, 250);
     }
 
 }

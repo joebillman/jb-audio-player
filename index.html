@@ -20,8 +20,9 @@
             audioPlayer = new JBAudioPlayer();
             audioPlayer.x = 4;
             audioPlayer.y = 4;
-            stage.addChild(audioPlayer)
+            stage.addChild(audioPlayer);
             audioPlayer.create();
+            audioPlayer.loadAudioFile("audio/press-forward.mp3");
 
             stage.update();
         }
