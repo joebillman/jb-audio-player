@@ -25,16 +25,22 @@ var JBAudioPlayer = (function (_super) {
         _super.call(this);
         this.handleClick = function () {
             console.log("click");
+            console.log(_this.pauseBtn.visible);
             if (_this.playing) {
                 clearInterval(_this.intervalID);
+                _this.pauseBtn.visible = false;
+                _this.playBtn.visible = true;
                 _this.curPosition = _this.curAudio.position;
                 _this.curAudio.stop();
             }
             else {
+                _this.pauseBtn.visible = true;
+                _this.playBtn.visible = false;
                 _this.curAudio.play();
                 _this.curAudio.position = _this.curPosition;
                 _this.intervalID = setInterval(_this.handleInterval, 250);
             }
+            _this.stage.update();
             _this.playing = !_this.playing;
         };
         this.handleAudioComplete = function () {
@@ -46,11 +52,15 @@ var JBAudioPlayer = (function (_super) {
             _this.updateProgressBarWidth(_this.curAudio.position / _this.curAudio.duration);
         };
         this.handleLoadAudio = function () {
+            _this.updateTitle("Press Forward");
+            _this.updateSubTitle("Noelle Bybee");
             _this.play();
         };
         this.bgFillColor = "#FFFFFF";
         this.bgStrokeColor = "#0079FF";
-        this.btnColor = "FF0000";
+        this.btnFillColor = "#FFFFFF";
+        this.btnStrokeColor = "#0079FF";
+        this.btnSymbolColor = "#0079FF";
         this.played = false;
         this.progressBarBgColor = "#CCCCCC";
         this.progressBarFillColor = "#0079FF";
@@ -78,17 +88,42 @@ var JBAudioPlayer = (function (_super) {
         this.bg.setBounds(0, 0, this.width, this.height);
         this.addChild(this.bg);
     };
+    JBAudioPlayer.prototype.createPauseBtn = function () {
+        this.pauseBtn = new Container();
+        var circle = new Shape();
+        circle.graphics.beginStroke(this.btnStrokeColor);
+        circle.graphics.setStrokeStyle(2);
+        circle.graphics.beginFill(this.btnFillColor);
+        circle.graphics.drawCircle(0, 0, 25);
+        circle.graphics.endFill();
+        this.pauseBtn.addChild(circle);
+        var bar1 = new Shape();
+        bar1.graphics.beginFill(this.btnSymbolColor);
+        bar1.graphics.drawRect(-10, -10, 8, 20);
+        bar1.graphics.endFill();
+        this.pauseBtn.addChild(bar1);
+        var bar2 = new Shape();
+        bar2.graphics.beginFill(this.btnSymbolColor);
+        bar2.graphics.drawRect(2, -10, 8, 20);
+        bar2.graphics.endFill();
+        this.pauseBtn.addChild(bar2);
+        this.pauseBtn.setBounds(0, 0, 50, 50);
+        this.pauseBtn.x = this.width / 2;
+        this.pauseBtn.y = 128;
+        this.pauseBtn.addEventListener("click", this.handleClick);
+        this.addChild(this.pauseBtn);
+    };
     JBAudioPlayer.prototype.createPlayBtn = function () {
         this.playBtn = new Container();
         var circle = new Shape();
-        circle.graphics.beginStroke("#0079FF");
+        circle.graphics.beginStroke(this.btnStrokeColor);
         circle.graphics.setStrokeStyle(2);
-        circle.graphics.beginFill("#FFFFFF");
+        circle.graphics.beginFill(this.bgFillColor);
         circle.graphics.drawCircle(0, 0, 25);
         circle.graphics.endFill();
         this.playBtn.addChild(circle);
         var triangle = new Shape();
-        triangle.graphics.beginFill("#0079FF");
+        triangle.graphics.beginFill(this.btnSymbolColor);
         triangle.graphics.drawPolyStar(0, 0, 16, 3, 0, 0);
         triangle.graphics.endFill();
         this.playBtn.addChild(triangle);
@@ -96,6 +131,7 @@ var JBAudioPlayer = (function (_super) {
         this.playBtn.x = this.width / 2;
         this.playBtn.y = 128;
         this.playBtn.addEventListener("click", this.handleClick);
+        this.playBtn.visible = false;
         this.addChild(this.playBtn);
     };
     JBAudioPlayer.prototype.createProgressBar = function (width) {
@@ -128,7 +164,7 @@ var JBAudioPlayer = (function (_super) {
         this.subTitleField.color = this.textColor;
         this.subTitleField.font = "18px Arial";
         this.subTitleField.textAlign = "center";
-        this.subTitleField.text = "Subtitle Goes Here";
+        this.subTitleField.text = "";
         this.subTitleField.x = this.width / 2;
         this.subTitleField.y = 37;
         this.addChild(this.subTitleField);
@@ -154,7 +190,7 @@ var JBAudioPlayer = (function (_super) {
         this.titleField.color = this.textColor;
         this.titleField.font = "bold 22px Arial";
         this.titleField.textAlign = "center";
-        this.titleField.text = "Title Goes Here";
+        this.titleField.text = "";
         this.titleField.x = this.width / 2;
         this.titleField.y = 8;
         this.addChild(this.titleField);
@@ -194,6 +230,7 @@ var JBAudioPlayer = (function (_super) {
         this.createTimeFields();
         this.createProgressBars();
         this.createPlayBtn();
+        this.createPauseBtn();
     };
     JBAudioPlayer.prototype.loadAudioFile = function (file, id) {
         if (id === void 0) { id = "audio"; }
@@ -205,9 +242,15 @@ var JBAudioPlayer = (function (_super) {
         this.playing = true;
         this.curAudio = createjs.Sound.play(id);
         this.curAudio.on("complete", this.handleAudioComplete, this);
-        //this.curAudio.volume = 0;
+        this.curAudio.volume = 0;
         this.totalTimeField.text = this.milliToMinAndSec(this.curAudio.duration);
         this.intervalID = setInterval(this.handleInterval, 250);
+    };
+    JBAudioPlayer.prototype.updateSubTitle = function (sub) {
+        this.subTitleField.text = sub;
+    };
+    JBAudioPlayer.prototype.updateTitle = function (title) {
+        this.titleField.text = title;
     };
     return JBAudioPlayer;
 }(Container));

@@ -25,7 +25,9 @@ class JBAudioPlayer extends Container implements ICreateable
 
     public bgFillColor:string;
     public bgStrokeColor:string;
-    public btnColor:string;
+    public btnFillColor:string;
+    public btnStrokeColor:string;
+    public btnSymbolColor:string;
     public cornerRadius:number;
     public height:number;
     public progressBarBgColor:string;
@@ -43,6 +45,7 @@ class JBAudioPlayer extends Container implements ICreateable
     private curPosition:number;
     private curTimeField:CreateJSText;
     private intervalID:number;
+    private pauseBtn:Container;
     private playBtn:Container;
     private played:boolean;
     private playing:boolean;
@@ -64,7 +67,9 @@ class JBAudioPlayer extends Container implements ICreateable
 
         this.bgFillColor = "#FFFFFF";
         this.bgStrokeColor = "#0079FF";
-        this.btnColor = "FF0000";
+        this.btnFillColor = "#FFFFFF";
+        this.btnStrokeColor = "#0079FF";
+        this.btnSymbolColor = "#0079FF";
         this.played = false;
         this.progressBarBgColor = "#CCCCCC";
         this.progressBarFillColor = "#0079FF";
@@ -97,20 +102,51 @@ class JBAudioPlayer extends Container implements ICreateable
         this.addChild(this.bg);
     }
 
+    private createPauseBtn()
+    {
+        this.pauseBtn = new Container();
+
+        var circle = new Shape();
+        circle.graphics.beginStroke(this.btnStrokeColor);
+        circle.graphics.setStrokeStyle(2);
+        circle.graphics.beginFill(this.btnFillColor);
+        circle.graphics.drawCircle(0, 0, 25);
+        circle.graphics.endFill();
+        this.pauseBtn.addChild(circle);
+
+        var bar1 = new Shape();
+        bar1.graphics.beginFill(this.btnSymbolColor);
+        bar1.graphics.drawRect(-10, -10, 8, 20);
+        bar1.graphics.endFill();
+        this.pauseBtn.addChild(bar1);
+
+        var bar2 = new Shape();
+        bar2.graphics.beginFill(this.btnSymbolColor);
+        bar2.graphics.drawRect(2, -10, 8, 20);
+        bar2.graphics.endFill();
+        this.pauseBtn.addChild(bar2);
+
+        this.pauseBtn.setBounds(0, 0, 50, 50);
+        this.pauseBtn.x = this.width/2;
+        this.pauseBtn.y = 128;
+        this.pauseBtn.addEventListener("click", this.handleClick);
+        this.addChild(this.pauseBtn);
+    }
+
     private createPlayBtn()
     {
         this.playBtn = new Container();
 
         var circle = new Shape();
-        circle.graphics.beginStroke("#0079FF");
+        circle.graphics.beginStroke(this.btnStrokeColor);
         circle.graphics.setStrokeStyle(2);
-        circle.graphics.beginFill("#FFFFFF");
+        circle.graphics.beginFill(this.bgFillColor);
         circle.graphics.drawCircle(0, 0, 25);
         circle.graphics.endFill();
         this.playBtn.addChild(circle);
 
         var triangle = new Shape();
-        triangle.graphics.beginFill("#0079FF");
+        triangle.graphics.beginFill(this.btnSymbolColor);
         triangle.graphics.drawPolyStar(0, 0, 16, 3, 0, 0);
         triangle.graphics.endFill();
         this.playBtn.addChild(triangle);
@@ -119,6 +155,7 @@ class JBAudioPlayer extends Container implements ICreateable
         this.playBtn.x = this.width/2;
         this.playBtn.y = 128;
         this.playBtn.addEventListener("click", this.handleClick);
+        this.playBtn.visible = false;
         this.addChild(this.playBtn);
     }
 
@@ -158,7 +195,7 @@ class JBAudioPlayer extends Container implements ICreateable
         this.subTitleField.color = this.textColor;
         this.subTitleField.font = "18px Arial";
         this.subTitleField.textAlign = "center";
-        this.subTitleField.text = "Subtitle Goes Here";
+        this.subTitleField.text = "";
         this.subTitleField.x = this.width/2;
         this.subTitleField.y = 37;
         this.addChild(this.subTitleField);
@@ -189,7 +226,7 @@ class JBAudioPlayer extends Container implements ICreateable
         this.titleField.color = this.textColor;
         this.titleField.font = "bold 22px Arial";
         this.titleField.textAlign = "center";
-        this.titleField.text = "Title Goes Here";
+        this.titleField.text = "";
         this.titleField.x = this.width/2;
         this.titleField.y = 8;
         this.addChild(this.titleField);
@@ -210,18 +247,24 @@ class JBAudioPlayer extends Container implements ICreateable
     private handleClick = () =>
     {
         console.log("click");
+        console.log(this.pauseBtn.visible);
         if(this.playing)
         {
             clearInterval(this.intervalID);
+            this.pauseBtn.visible = false;
+            this.playBtn.visible = true;
             this.curPosition = this.curAudio.position;
             this.curAudio.stop();
         }
         else
         {
+            this.pauseBtn.visible = true;
+            this.playBtn.visible = false;
             this.curAudio.play();
             this.curAudio.position = this.curPosition;
             this.intervalID = setInterval(this.handleInterval, 250);
         }
+        this.stage.update();
         this.playing = !this.playing;
     }
 
@@ -239,6 +282,8 @@ class JBAudioPlayer extends Container implements ICreateable
 
     private handleLoadAudio = () =>
     {
+        this.updateTitle("Press Forward");
+        this.updateSubTitle("Noelle Bybee");
         this.play();
     }
 
@@ -278,6 +323,7 @@ class JBAudioPlayer extends Container implements ICreateable
         this.createTimeFields();
         this.createProgressBars();
         this.createPlayBtn();
+        this.createPauseBtn();
     }
 
     public loadAudioFile(file:string, id:string="audio")
@@ -291,9 +337,19 @@ class JBAudioPlayer extends Container implements ICreateable
         this.playing = true;
         this.curAudio = createjs.Sound.play(id);
         this.curAudio.on("complete", this.handleAudioComplete, this);
-        //this.curAudio.volume = 0;
+        this.curAudio.volume = 0;
         this.totalTimeField.text = this.milliToMinAndSec(this.curAudio.duration);
         this.intervalID = setInterval(this.handleInterval, 250);
+    }
+
+    public updateSubTitle(sub:string)
+    {
+        this.subTitleField.text = sub;
+    }
+
+    public updateTitle(title:string)
+    {
+        this.titleField.text = title;
     }
 
 }
