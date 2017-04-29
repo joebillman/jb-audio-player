@@ -1,10 +1,15 @@
 /// <reference path="../libraries/createjs/createjs.d.ts"/>
 /// <reference path="ICreateable.ts"/>
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var Bitmap = createjs.Bitmap;
 var Container = createjs.Container;
 var CreateJSText = createjs.Text;
@@ -21,9 +26,8 @@ var JBAudioPlayer = (function (_super) {
     //
     //--------------------------------------------------------------------------
     function JBAudioPlayer() {
-        var _this = this;
-        _super.call(this);
-        this.handleClick = function () {
+        var _this = _super.call(this) || this;
+        _this.handleClick = function () {
             console.log("click");
             console.log(_this.pauseBtn.visible);
             if (_this.playing) {
@@ -43,32 +47,33 @@ var JBAudioPlayer = (function (_super) {
             _this.stage.update();
             _this.playing = !_this.playing;
         };
-        this.handleAudioComplete = function () {
+        _this.handleAudioComplete = function () {
             clearInterval(_this.intervalID);
             //console.log("audioComplete");
         };
-        this.handleInterval = function () {
+        _this.handleInterval = function () {
             _this.updatePlayPosition();
             _this.updateProgressBarWidth(_this.curAudio.position / _this.curAudio.duration);
         };
-        this.handleLoadAudio = function () {
+        _this.handleLoadAudio = function () {
             _this.updateTitle("Press Forward");
             _this.updateSubTitle("Noelle Bybee");
             _this.play();
         };
-        this.bgFillColor = "#FFFFFF";
-        this.bgStrokeColor = "#0079FF";
-        this.btnFillColor = "#FFFFFF";
-        this.btnStrokeColor = "#0079FF";
-        this.btnSymbolColor = "#0079FF";
-        this.played = false;
-        this.progressBarBgColor = "#CCCCCC";
-        this.progressBarFillColor = "#0079FF";
-        this.textColor = "#0079FF";
-        this.timeFontColor = "#000000";
-        this.width = 320;
-        this.height = 180;
-        this.cornerRadius = 6;
+        _this.bgFillColor = "#FFFFFF";
+        _this.bgStrokeColor = "#0079FF";
+        _this.btnFillColor = "#FFFFFF";
+        _this.btnStrokeColor = "#0079FF";
+        _this.btnSymbolColor = "#0079FF";
+        _this.played = false;
+        _this.progressBarBgColor = "#CCCCCC";
+        _this.progressBarFillColor = "#0079FF";
+        _this.textColor = "#0079FF";
+        _this.timeFontColor = "#000000";
+        _this.width = 320;
+        _this.height = 180;
+        _this.cornerRadius = 6;
+        return _this;
     }
     //--------------------------------------------------------------------------
     //
