@@ -25,7 +25,9 @@ var JBAudioPlayer = (function (_super) {
     //  Constructor
     //
     //--------------------------------------------------------------------------
-    function JBAudioPlayer() {
+    function JBAudioPlayer(width, height) {
+        if (width === void 0) { width = 320; }
+        if (height === void 0) { height = 180; }
         var _this = _super.call(this) || this;
         _this.handleClick = function () {
             console.log("click");
@@ -56,8 +58,9 @@ var JBAudioPlayer = (function (_super) {
             _this.updateProgressBarWidth(_this.curAudio.position / _this.curAudio.duration);
         };
         _this.handleLoadAudio = function () {
-            _this.updateTitle("Press Forward");
-            _this.updateSubTitle("Noelle Bybee");
+            _this.audioLoaded = true;
+            _this.updateTitle(_this.curTitle);
+            _this.updateSubtitle(_this.curSubtitle);
             _this.play();
         };
         _this.bgFillColor = "#FFFFFF";
@@ -70,8 +73,8 @@ var JBAudioPlayer = (function (_super) {
         _this.progressBarFillColor = "#0079FF";
         _this.textColor = "#0079FF";
         _this.timeFontColor = "#000000";
-        _this.width = 320;
-        _this.height = 180;
+        _this.width = width;
+        _this.height = height;
         _this.cornerRadius = 6;
         return _this;
     }
@@ -164,15 +167,15 @@ var JBAudioPlayer = (function (_super) {
         this.createProgressBarBg();
         this.createProgressBar();
     };
-    JBAudioPlayer.prototype.createSubTitle = function () {
-        this.subTitleField = new CreateJSText();
-        this.subTitleField.color = this.textColor;
-        this.subTitleField.font = "18px Arial";
-        this.subTitleField.textAlign = "center";
-        this.subTitleField.text = "";
-        this.subTitleField.x = this.width / 2;
-        this.subTitleField.y = 37;
-        this.addChild(this.subTitleField);
+    JBAudioPlayer.prototype.createSubtitle = function () {
+        this.subtitleField = new CreateJSText();
+        this.subtitleField.color = this.textColor;
+        this.subtitleField.font = "18px Arial";
+        this.subtitleField.textAlign = "center";
+        this.subtitleField.text = "";
+        this.subtitleField.x = this.width / 2;
+        this.subtitleField.y = 37;
+        this.addChild(this.subtitleField);
     };
     JBAudioPlayer.prototype.createTimeFields = function () {
         this.curTimeField = new CreateJSText();
@@ -231,32 +234,47 @@ var JBAudioPlayer = (function (_super) {
     JBAudioPlayer.prototype.create = function () {
         this.createBg();
         this.createTitle();
-        this.createSubTitle();
+        this.createSubtitle();
         this.createTimeFields();
         this.createProgressBars();
         this.createPlayBtn();
         this.createPauseBtn();
+        this.stage.update();
     };
-    JBAudioPlayer.prototype.loadAudioFile = function (file, id) {
+    JBAudioPlayer.prototype.loadAudioFile = function (file, title, subtitle, id) {
+        if (title === void 0) { title = ""; }
+        if (subtitle === void 0) { subtitle = ""; }
         if (id === void 0) { id = "audio"; }
+        this.audioLoaded = false;
+        if (this.playing) {
+            createjs.Sound.stop();
+            this.playing = false;
+            this.curTimeField.text = "00:00";
+            this.totalTimeField.text = "00:00";
+        }
         Sound.on("fileload", this.handleLoadAudio, this);
         Sound.registerSound(file, id);
+        this.curTitle = title;
+        this.curSubtitle = subtitle;
+        this.updateTitle("");
+        this.updateSubtitle("Loading...");
     };
     JBAudioPlayer.prototype.play = function (id) {
         if (id === void 0) { id = "audio"; }
         this.playing = true;
         this.curAudio = createjs.Sound.play(id);
         this.curAudio.on("complete", this.handleAudioComplete, this);
-        this.curAudio.volume = 0;
+        //this.curAudio.volume = 0;
         this.totalTimeField.text = this.milliToMinAndSec(this.curAudio.duration);
         this.intervalID = setInterval(this.handleInterval, 250);
     };
-    JBAudioPlayer.prototype.updateSubTitle = function (sub) {
-        this.subTitleField.text = sub;
+    JBAudioPlayer.prototype.updateSubtitle = function (subtitle) {
+        this.subtitleField.text = subtitle;
+        this.stage.update();
     };
     JBAudioPlayer.prototype.updateTitle = function (title) {
         this.titleField.text = title;
+        this.stage.update();
     };
     return JBAudioPlayer;
 }(Container));
-//# sourceMappingURL=JBAudioPlayer.js.map

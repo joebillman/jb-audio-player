@@ -40,10 +40,13 @@ class JBAudioPlayer extends Container implements ICreateable
     //  Private:
     //----------------------------------
 
+    private audioLoaded:boolean;
     private bg:Shape;
     private curAudio;
     private curPosition:number;
+    private curSubtitle:string;
     private curTimeField:CreateJSText;
+    private curTitle:string;
     private intervalID:number;
     private pauseBtn:Container;
     private playBtn:Container;
@@ -51,7 +54,7 @@ class JBAudioPlayer extends Container implements ICreateable
     private playing:boolean;
     private progressBarBg:Shape;
     private progressBarFill:Shape;
-    private subTitleField:CreateJSText;
+    private subtitleField:CreateJSText;
     private titleField:CreateJSText;
     private totalTimeField:CreateJSText;
 
@@ -61,7 +64,7 @@ class JBAudioPlayer extends Container implements ICreateable
     //
     //--------------------------------------------------------------------------
 
-    constructor()
+    constructor(width:number=320, height=180)
     {
         super();
 
@@ -75,8 +78,8 @@ class JBAudioPlayer extends Container implements ICreateable
         this.progressBarFillColor = "#0079FF";
         this.textColor = "#0079FF";
         this.timeFontColor = "#000000";
-        this.width = 320;
-        this.height = 180;
+        this.width = width;
+        this.height = height;
         this.cornerRadius = 6;
     }
 
@@ -189,16 +192,16 @@ class JBAudioPlayer extends Container implements ICreateable
         this.createProgressBar();
     }
 
-    private createSubTitle()
+    private createSubtitle()
     {
-        this.subTitleField = new CreateJSText();
-        this.subTitleField.color = this.textColor;
-        this.subTitleField.font = "18px Arial";
-        this.subTitleField.textAlign = "center";
-        this.subTitleField.text = "";
-        this.subTitleField.x = this.width/2;
-        this.subTitleField.y = 37;
-        this.addChild(this.subTitleField);
+        this.subtitleField = new CreateJSText();
+        this.subtitleField.color = this.textColor;
+        this.subtitleField.font = "18px Arial";
+        this.subtitleField.textAlign = "center";
+        this.subtitleField.text = "";
+        this.subtitleField.x = this.width/2;
+        this.subtitleField.y = 37;
+        this.addChild(this.subtitleField);
     }
 
     private createTimeFields()
@@ -282,8 +285,9 @@ class JBAudioPlayer extends Container implements ICreateable
 
     private handleLoadAudio = () =>
     {
-        this.updateTitle("Press Forward");
-        this.updateSubTitle("Noelle Bybee");
+        this.audioLoaded = true;
+        this.updateTitle(this.curTitle);
+        this.updateSubtitle(this.curSubtitle);
         this.play();
     }
 
@@ -319,17 +323,30 @@ class JBAudioPlayer extends Container implements ICreateable
     {
         this.createBg();
         this.createTitle();
-        this.createSubTitle();
+        this.createSubtitle();
         this.createTimeFields();
         this.createProgressBars();
         this.createPlayBtn();
         this.createPauseBtn();
+        this.stage.update();
     }
 
-    public loadAudioFile(file:string, id:string="audio")
+    public loadAudioFile(file:string, title:string="", subtitle="", id:string="audio")
     {
+        this.audioLoaded = false;
+        if(this.playing)
+        {
+            createjs.Sound.stop();
+            this.playing = false;
+            this.curTimeField.text = "00:00";
+            this.totalTimeField.text = "00:00";
+        }
         Sound.on("fileload", this.handleLoadAudio, this);
         Sound.registerSound(file, id);
+        this.curTitle = title;
+        this.curSubtitle = subtitle;
+        this.updateTitle("");
+        this.updateSubtitle("Loading...");
     }
 
     public play(id:string="audio")
@@ -337,19 +354,21 @@ class JBAudioPlayer extends Container implements ICreateable
         this.playing = true;
         this.curAudio = createjs.Sound.play(id);
         this.curAudio.on("complete", this.handleAudioComplete, this);
-        this.curAudio.volume = 0;
+        //this.curAudio.volume = 0;
         this.totalTimeField.text = this.milliToMinAndSec(this.curAudio.duration);
         this.intervalID = setInterval(this.handleInterval, 250);
     }
 
-    public updateSubTitle(sub:string)
+    public updateSubtitle(subtitle:string)
     {
-        this.subTitleField.text = sub;
+        this.subtitleField.text = subtitle;
+        this.stage.update();
     }
 
     public updateTitle(title:string)
     {
         this.titleField.text = title;
+        this.stage.update();
     }
 
 }
